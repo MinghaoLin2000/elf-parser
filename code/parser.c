@@ -1,4 +1,10 @@
 #include<stdio.h>
+#include<fcntl.h>
+#include<sys/types.h>
+#include<unistd.h>
+#include<string.h>
+#include<malloc.h>
+ 
 void help()
 {
     printf("this is YenKoc parser!");
@@ -140,10 +146,43 @@ void readfileheader(char* efile,int num)
     //下标
         printf(" %-33s: %d (bytes)\r\n","section header string table index",*(u_int16_t*)efile);
         
-
-
 }
-int main()
-{
 
+//关于main()函数的参数解释，参考了这篇博客https://www.cnblogs.com/liuzhenbo/p/11044404.html
+//main函数的实参是在操作系统中命令行输入的，argc是输入参数的个数（包括文件名），argv这个字符指针数组，每个都代表参数对应的字符串
+int main(int argc,char* argv[])
+{
+    if(argc!=3)
+    {
+        printf("您输入的指令有误，请重新输入!\r\n");
+        help();
+        return 0;
+    }
+    //打开指定文件
+    int fd=open(argv[2],O_RDONLY,0);
+    //如果打开文件失败，就直接返回，因为后面是需要将文件的内存完整复制到内存的
+    if(fd==-1)
+    {
+        printf("打开文件失败\n");
+        return 0;
+    }
+    //分配文件
+    long int end =lseek(fd,0,SEEK_END);
+    long int begin=lseek(fd,0,SEEK_SET);
+    char* efile=malloc(end);
+    if(!efile)
+    {
+        printf("文件分配内存失败");
+        return 0;
+    }
+    memset(efile,0,end);
+    if (-1==read(fd,efile,end))
+    {
+        perror("文件读取失败");
+        return 0;
+    }
+    if(!strcmp(agrv[1],"-h"))
+    {
+        readfileheader(efile);
+    }
 }
