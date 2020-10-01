@@ -4,7 +4,7 @@
 #include<unistd.h>
 #include<string.h>
 #include<malloc.h>
- 
+#include<elf.h>
 void help()
 {
     printf("this is YenKoc parser!");
@@ -147,9 +147,152 @@ void readfileheader(char* efile,int num)
         printf(" %-33s: %d (bytes)\r\n","section header string table index",*(u_int16_t*)efile);
         
 }
+void sectionReader(char* efile)
+{
+    //得到节区的数量
+    int nNum=(Elf64_Ehdr *)(efile)->e_shnum;
+    //get shstrndex
+    Elf64_Ehdr* efilehead=(Elf64_Ehdr*)efile;
+    Elf64_Half eshstrndx=efilehead->e_shstrndx;
+    //得到偏移地址
+    Elf64_Shdr* psecheader=(Elf64_Shdr*)(efile+efilehead->e_shoff);
+    Elf64_Shdr* pshstr=(Elf64_Shdr*)(psecheader+eshstrndx);
+    //字符串表
+    char* pshstrbuff=(char*)(efile+pshstr->sh_offset);
+     printf("共有 %d 节区表, 偏移位置开始于 0x%lx:\r\n\r\n",
+           nNum, *(Elf64_Off*)(efile+ 40));
+    printf("节头:\r\n");  //打印标志位信息
+    printf("  [Nr] %-16s  %-16s  %-16s  %-16s\r\n", "Name", "Type", "Address", "Offset");
+    printf("       %-16s  %-16s  %-5s  %-5s  %-5s  %-5s\r\n", "Size", "EntSize", "Flags", "Link", "Info", "Align");
+    //遍历每一个节表
+    for(int i=0;i<nNumSec;i++)
+    {
+        printf(" [%2d] %-16s ",i,(char*)(psecheader[i].sh_name+pshstrbuff));
+        //Type
+        switch (psecheader[i].sh_type)
+        {
+        case SHT_NULL:
+                printf("%-16s  ", "NULL");break;
+            case SHT_PROGBITS:
+                printf("%-16s  ", "PROGBITS");break;
+            case SHT_SYMTAB:
+                printf("%-16s  ", "SYMTAB");break;
+            case SHT_STRTAB:
+                printf("%-16s  ", "STRTAB");break;
+            case SHT_RELA:
+                printf("%-16s  ", "RELA");break;
+            case SHT_HASH:
+                printf("%-16s  ", "GNU_HASH");break;
+            case SHT_DYNAMIC:
+                printf("%-16s  ", "DYNAMIC");break;
+            case SHT_NOTE:
+                printf("%-16s  ", "NOTE");break;
+            case SHT_NOBITS:
+                printf("%-16s  ", "NOBITS");break;
+            case SHT_REL:
+                printf("%-16s  ", "REL");break;
+            case SHT_SHLIB:
+                printf("%-16s  ", "SHLIB");break;
+            case SHT_DYNSYM:
+                printf("%-16s  ", "DYNSYM");break;
+            case SHT_INIT_ARRAY:
+                printf("%-16s  ", "INIT_ARRY");break;
+            case SHT_FINI_ARRAY:
+                printf("%-16s  ", "FINI_ARRY");break;
+            case SHT_PREINIT_ARRAY:
+                printf("%-16s  ", "PREINIT_ARRAY");break;
+            case SHT_GNU_HASH:
+                printf("%-16s  ", "GNU_HASH");break;
+            case SHT_GNU_ATTRIBUTES:
+                printf("%-16s  ", "GNU_ATTRIBUTES");break;
+            case SHT_GNU_LIBLIST:
+                printf("%-16s  ", "GNU_LIBLIST");break;
+            case SHT_GNU_verdef:
+                printf("%-16s  ", "GNU_verdef");break;
+            case SHT_GNU_verneed:
+                printf("%-16s  ", "GNU_verneed");break;
+            case SHT_GNU_versym:
+                printf("%-16s  ", "GNU_versym");break;
+            default:
+                printf("%-16s  ", "NONE");break;
+        }
+        //对应节对应文件开始的偏移以及载入内存中的虚拟地址
+        printf("%0161X %081X\r\n",psecheader[i].sh_addr,psecheader[i].sh_offset);
+        //对应节所占的文件大小
+        printf("      %0161X %0161X  ",psecheader[i].sh_size,psecheader[i].sh_entsize);
+         switch (psecheader[i].sh_flags) {
+                case 0:
+                    printf("%3s    %4u  %4u  %4lu\r\n",
+                           "", psecheader[i].sh_link, psecheader[i].sh_info, psecheader[i].sh_addralign);
+                    break;
+                case 1:
+                    printf("%3s    %4u  %4u  %4lu\r\n",
+                           "W", psecheader[i].sh_link, psecheader[i].sh_info, psecheader[i].sh_addralign);
+                    break;
+                case 2:
+                    printf("%3s    %4u  %4u  %4lu\r\n",
+                           "A", psecheader[i].sh_link, psecheader[i].sh_info, psecheader[i].sh_addralign);
+                    break;
+                case 4:
+                    printf("%3s    %4u  %4u  %4lu\r\n",
+                           "X", psecheader[i].sh_link, psecheader[i].sh_info, psecheader[i].sh_addralign);
+                    break;
+                case 3:
+                    printf("%3s    %4u  %4u  %4lu\r\n",
+                           "WA", psecheader[i].sh_link, psecheader[i].sh_info, psecheader[i].sh_addralign);
+                    break;
+                case 5://WX
+                    printf("%3s    %4u  %4u  %4lu\r\n",
+                           "WX", psecheader[i].sh_link, psecheader[i].sh_info, psecheader[i].sh_addralign);
+                    break;
+                case 6://AX
+                    printf("%3s    %4u  %4u  %4lu\r\n",
+                           "AX", psecheader[i].sh_link, psecheader[i].sh_info, psecheader[i].sh_addralign);
+                    break;
+                case 7://WAX
+                    printf("%3s    %4u  %4u  %4lu\r\n",
+                           "WAX", psecheader[i].sh_link, psecheader[i].sh_info, psecheader[i].sh_addralign);
+                    break;
+                case SHF_MASKPROC://MS
+                    printf("%3s    %4u  %4u  %4lu\r\n",
+                           "MS", psecheader[i].sh_link, psecheader[i].sh_info, psecheader[i].sh_addralign);
+                    break;
+                default:
+                    printf("NONE\r\n");
+                    break;
+            }
+
+        }
+        printf("Key to Flags:\r\n");
+    };
+}
+//打印符号表
+void readsymtable(const char* efile)
+{
+    //从节区定位到偏移
+    Elf64_Ehdr* efilehead=(Elf64_Ehdr*)(efile);
+    Elf64_Half eshstrndx=efilehead->e_shstrndx;
+    Elf64_Shdr* psecheader=(Elf64_Shdr*)(efile+efilehead->e_shoff);
+    Elf64_Shdr* pshstr=(Elf64_Shdr*)(psecheader+eshstrndx);
+    char* pshstrbuff=(char*)(efile+pshstr->sh_offset);
+    for(int i=0;i<efilehead->e_shnum;++i)
+    {
+        if(!strcmp(psecheader[i].sh_name+pshstrbuff,".dynsym")||!strcmp(psecheader[i]).sh_name+pshstrbuff,".symtab")
+        {
+            Elf64_Sym* psym=(Elf64_Sym*)(efile+psecheader[i].sh_offset);
+            int ncount=psecheader[i].sh_size/psecheader[i].sh_entsize;
+            char* pbuffstr=(char*)((psecheader+psecheader[i].sh_link)->sh_offset+efile);
+            printf("Symbol table '%s' contains %d entries:\r\n",psecheader[i].sh_name+pshstrbuff,ncount);
+            outputsyminfo(psym,pbuffset,ncount);
+            continue;
+        }
+    }
+
+
+}
 
 //关于main()函数的参数解释，参考了这篇博客https://www.cnblogs.com/liuzhenbo/p/11044404.html
-//main函数的实参是在操作系统中命令行输入的，argc是输入参数的个数（包括文件名），argv这个字符指针数组，每个都代表参数对应的字符串
+//main函数的实参是在操作系统中命令行输入的，argc是输入参数的个数（包括运行的文件名），argv这个字符指针数组，每个都代表参数对应的字符串
 int main(int argc,char* argv[])
 {
     if(argc!=3)
