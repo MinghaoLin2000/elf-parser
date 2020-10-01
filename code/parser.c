@@ -287,10 +287,129 @@ void readsymtable(const char* efile)
             continue;
         }
     }
-
-
 }
-
+//程序头表
+void readProgramhead(const char* efile)
+{
+    //得到程序头表的起始地址
+    Elf64_Ehdr* filehead=(Elf64_Ehdr*)efile;
+    Elf64_Phdr* pproheader=(Elf64_phdr*)(efile+filehead->e_phoff);
+    //通过先获得节头表，然后知道字符串节的位置，以便后续知道字符串
+    　Elf64_Shdr* psecheader=(Elf64_Shdr*)(efile+filehead->e_shoff);
+    Elf64_Shdr* pshstr=(Elf64_Shdr*)(psecheader+filehead->e_shstrndx);
+    char* pstrbuff=(char*)(efile+pshstr->sh_offset);
+    printf("Elf 文件类型是");
+     switch(pfilehead->e_type)
+    {
+        case 0:
+            printf(" No file type\r\n");
+            break;
+        case 1:
+            printf(" Relocatable file\r\n");
+            break;
+        case 2:
+            printf(" Executable file\r\n");
+            break;
+        case 3:
+            printf(" Shared object file\r\n");
+            break;
+        case 4:
+            printf(" Core file\r\n");
+            break;
+        default:
+            printf(" ERROR\r\n");
+            break;
+    }
+    printf("入口点位置 0X%0lX\r\n", pfilehead->e_entry);
+    printf("共有 %d 程序头, 偏移位置 %lu\r\n\r\n", pfilehead->e_phnum, pfilehead->e_phoff);
+    printf("Program Headers:\r\n");
+    printf("  %-14s  %-16s  %-16s  %-16s\r\n", "Type", "Offset", "VirtAddr", "PhysAddr");
+    printf("  %-14s  %-16s  %-16s  %-6s  %-6s\r\n", "", "FileSiz", "MemSiz", "Flags", "Align");
+    for(int i=0;i<pfilehead->e_phnum;++i)
+    {
+        //type
+        switch(pproheader[i].p_type)
+        {
+            case PT_NULL:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            case PT_LOAD:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "LOAD", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            case PT_DYNAMIC:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "DYNAMIC", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            case PT_INTERP:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "INTERP", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            case PT_NOTE:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "NOTE", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            case PT_SHLIB:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "SHLIB", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            case PT_PHDR:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "PHDR", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            case PT_TLS:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "TLS", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            case PT_NUM:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "NUM", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            case PT_GNU_EH_FRAME:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "GNU_EH_FRAME", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            case PT_GNU_RELRO:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "GNU_RELRO", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            case PT_GNU_STACK:
+                printf("  %-14s  %016lX  %016lX  %016lX\r\n  %-14s  %016lX  %016lX  ", "GNU_STACK", pproheader[i].p_offset, pproheader[i].p_vaddr,
+                       pproheader[i].p_paddr, "", pproheader[i].p_filesz, pproheader[i].p_memsz);break;
+            default:
+                break;
+        }
+        //
+        switch(pproheader[i].p_flags)
+        {
+            case PF_X:
+                printf("%-6s  %-lX\r\n", "  E", pproheader[i].p_align);break;
+            case PF_W:
+                printf("%-6s  %-lX\r\n", " W ", pproheader[i].p_align);break;
+            case PF_R:
+                printf("%-6s  %-lX\r\n", "R  ", pproheader[i].p_align);break;
+            case PF_X|PF_W:
+                printf("%-6s  %-lX\r\n", " WE", pproheader[i].p_align);break;
+            case PF_X|PF_R:
+                printf("%-6s  %-lX\r\n", "R E", pproheader[i].p_align);break;
+            case PF_W|PF_R:
+                printf("%-6s  %-lX\r\n", "RW ", pproheader[i].p_align);break;
+            case PF_X|PF_R|PF_W:
+                printf("%-6s  %-lX\r\n", "RWE", pproheader[i].p_align);break;
+            default:
+                printf("\r\n");
+                break;
+        }
+        if(PT_INTERP == pproheader[i].p_type)
+            printf("      [Requesting program interpreter: %s]\r\n", (char*)(pbuff + pproheader[i].p_offset));
+    }
+    printf("\r\n Section to Segment mapping:\r\n");
+    printf("  段节...\r\n");
+    for(int i=0;i<pfilehead->e_phnum;++i)
+    {
+        printf("   %-7d", i);
+        for(int n = 0;n<pfilehead->e_shnum;++n)
+        {
+            Elf64_Off temp = psecheader[n].sh_addr + psecheader[n].sh_size;
+            if((psecheader[n].sh_addr>pproheader[i].p_vaddr && psecheader[n].sh_addr<pproheader[i].p_vaddr + pproheader[i].p_memsz)  ||
+                    (temp > pproheader[i].p_vaddr && temp<=pproheader[i].p_vaddr + pproheader[i].p_memsz))
+            {
+                printf("%s ", (char*)(psecheader[n].sh_name + pstrbuff));
+            }
+        }
+        printf("\r\n");
+    }
+}
 //关于main()函数的参数解释，参考了这篇博客https://www.cnblogs.com/liuzhenbo/p/11044404.html
 //main函数的实参是在操作系统中命令行输入的，argc是输入参数的个数（包括运行的文件名），argv这个字符指针数组，每个都代表参数对应的字符串
 int main(int argc,char* argv[])
@@ -327,5 +446,11 @@ int main(int argc,char* argv[])
     if(!strcmp(agrv[1],"-h"))
     {
         readfileheader(efile);
+    }else if(!strcmp(argv[1],"-S"))
+    {
+        sectionReader(efile);
+    }else if(!strcmp(argv[1],"-s"))
+    {
+        readsymtable(efile);
     }
 }
